@@ -28,6 +28,7 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 
+	"github.com/cs3238-tsuzu/flappygopher-online/internal/form"
 	"github.com/cs3238-tsuzu/flappygopher-online/internal/message"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -73,6 +74,7 @@ var (
 	tilesImage      *ebiten.Image
 	arcadeFont      font.Face
 	smallArcadeFont font.Face
+	nameFont        font.Face
 )
 
 func init() {
@@ -111,6 +113,15 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	nameFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    8,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 var (
@@ -136,7 +147,8 @@ func init() {
 type Mode int
 
 const (
-	ModeTitle Mode = iota
+	ModeForm Mode = iota
+	ModeTitle
 	ModeGame
 	ModeGameOver
 )
@@ -162,6 +174,7 @@ type Game struct {
 	otherPlayers []*Gopher
 	standingText string
 	standing     []message.Result
+	form         *form.Form
 
 	step int
 }
@@ -186,6 +199,7 @@ func NewGame() *Game {
 		return hitPlayer
 	})
 
+	g.form = &form.Form{}
 	g.me = NewGopher(gopherImage, g.jumpPlayerPool, g.hitPlayerPool)
 	g.cameraX = -240
 	g.pipeTileYs = make([]int, 256)
@@ -220,6 +234,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func (g *Game) Update() error {
 	switch g.mode {
+	case ModeForm:
+		name := g.form.Update()
+
+		if name != "" {
+			g.me.name = name
+			fmt.Println(g.me.name)
+			g.mode = ModeTitle
+		}
+		return nil
 	case ModeTitle:
 		if jump() {
 			g.mode = ModeGame
@@ -271,6 +294,12 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.mode == ModeForm {
+		g.form.Draw(screen)
+
+		return
+	}
+
 	screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 	g.drawTiles(screen)
 
@@ -299,10 +328,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	if g.mode == ModeTitle {
 		if len(g.standingText) != 0 {
-			step := -g.step
-			step %= screenWidth
-
 			width := text.BoundString(arcadeFont, g.standingText).Dx()
+			step := -g.step
+			step %= width
+
 			for step < screenWidth {
 				text.Draw(screen, g.standingText, arcadeFont, step, 7*fontSize, color.White)
 

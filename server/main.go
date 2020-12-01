@@ -170,8 +170,21 @@ func main() {
 
 	go hub.standingWorker()
 
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	http.HandleFunc("/ws", hub.WebSocketHandler)
+	mux := http.NewServeMux()
+	// mux.Handle("/", http.FileServer(http.Dir("./static")))
+	mux.HandleFunc("/ws", hub.WebSocketHandler)
 
-	http.ListenAndServe(":7777", nil)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		mux.ServeHTTP(w, r)
+	})
+
+	http.ListenAndServe(":7777", handler)
 }

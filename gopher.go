@@ -1,11 +1,13 @@
 package main
 
 import (
+	"image/color"
 	"math"
 	"sync"
 	"time"
 
 	"github.com/cs3238-tsuzu/flappygopher-online/internal/message"
+	textsoba "github.com/cs3238-tsuzu/prasoba/text"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -232,14 +234,23 @@ func (g *Gopher) Draw(screen *ebiten.Image, cameraX, cameraY int) {
 	g.lock.RLock()
 	defer g.lock.RUnlock()
 
+	x := float64(g.x16/16.0) - float64(cameraX)
+	y := float64(g.y16/16.0) - float64(cameraY)
+
 	op := &ebiten.DrawImageOptions{}
 	w, h := g.gopherImage.Size()
 	op.GeoM.Translate(-float64(w)/2.0, -float64(h)/2.0)
 	op.GeoM.Rotate(float64(g.vy16) / 96.0 * math.Pi / 6)
 	op.GeoM.Translate(float64(w)/2.0, float64(h)/2.0)
-	op.GeoM.Translate(float64(g.x16/16.0)-float64(cameraX), float64(g.y16/16.0)-float64(cameraY))
+	op.GeoM.Translate(x, y)
 	op.Filter = ebiten.FilterLinear
 	screen.DrawImage(g.gopherImage, op)
+
+	textsoba.NewText(g.name, nameFont).
+		WithColor(color.White).
+		Center(int(x)+g.gopherImage.Bounds().Dx()/2, int(y)+g.gopherImage.Bounds().Dy()).
+		Draw(screen)
+
 }
 
 func (g *Gopher) score() int {
