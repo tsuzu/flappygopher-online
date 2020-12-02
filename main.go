@@ -208,7 +208,7 @@ func NewGame() *Game {
 	}
 
 	var err error
-	g.client, err = NewClient("http://localhost:7777/ws", func() *Gopher {
+	g.client, err = NewClient("wss://fgo.tsuzu.dev/ws", func() *Gopher {
 		return NewGopher(gopherImage, g.jumpPlayerPool, g.hitPlayerPool)
 	})
 

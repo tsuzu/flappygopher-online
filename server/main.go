@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"reflect"
 	"sort"
 
@@ -171,7 +172,7 @@ func main() {
 	go hub.standingWorker()
 
 	mux := http.NewServeMux()
-	// mux.Handle("/", http.FileServer(http.Dir("./static")))
+	mux.Handle("/", http.FileServer(http.Dir("./dist")))
 	mux.HandleFunc("/ws", hub.WebSocketHandler)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -186,5 +187,11 @@ func main() {
 		mux.ServeHTTP(w, r)
 	})
 
-	http.ListenAndServe(":7777", handler)
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "7777"
+	}
+
+	http.ListenAndServe(":"+port, handler)
 }
